@@ -15,4 +15,5 @@ scipy
 scikit-learn
 plotly
 ta
-quantstats
+quantstatsopenai
+python-dotenv

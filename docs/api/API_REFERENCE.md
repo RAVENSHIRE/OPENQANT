@@ -1,61 +1,43 @@
 # API Referenz
 
-## 1. Modul: `strategies`
+## 1. Modul: `04_signals/signal.py`
 
-### `RSIStrategy(period: int, entry_threshold: float, exit_threshold: float) -> Signal`
+### `Signal(state: str, confidence: float)`
 
-**Beschreibung:** Implementiert eine Relative Strength Index (RSI) basierte Handelsstrategie.
+**Beschreibung:** Einheitliches Signalobjekt für alle Strategien.
 
 **Parameter:**
 
 | Parameter | Typ | Beschreibung |
 |---|---|---|
-| `period` | `int` | Die Anzahl der Perioden für die RSI-Berechnung. |
-| `entry_threshold` | `float` | Der RSI-Schwellenwert für den Einstieg in eine Position. |
-| `exit_threshold` | `float` | Der RSI-Schwellenwert für den Ausstieg aus einer Position. |
+| `state` | `str` | Einer von `entry`, `exit`, `hold`. |
+| `confidence` | `float` | Konfidenz im Bereich `[0, 1]`. |
 
-**Rückgabe:**
+## 2. Modul: `02_strategies`
 
-| Typ | Beschreibung |
-|---|---|
-| `Signal` | Ein Signalobjekt, das `entry`, `exit` oder `hold` angibt. |
+### `SeasonalMomentumStrategy.generate_signal(prices: Sequence[float]) -> Signal`
+### `TrendBreakoutStrategy.generate_signal(prices: Sequence[float]) -> Signal`
+### `CryptoMomentumStrategy.generate_signal(prices: Sequence[float]) -> Signal`
+### `SmallCapReversalStrategy.generate_signal(prices: Sequence[float]) -> Signal`
 
-## 2. Modul: `risk_management`
+**Beschreibung:** Vier dokumentierte Kernstrategien gemäß Konfiguration in `09_config/strategies.yaml`.
+
+## 3. Modul: `04_signals/aggregator.py`
+
+### `aggregate_consensus(signals: Sequence[str], min_votes: int = 2) -> AggregationResult`
+
+**Beschreibung:** Aggregiert mehrere Strategie-States zu einem Konsens-Signal.
+
+## 4. Modul: `05_risk/risk_manager.py`
 
 ### `KellyCriterion(win_probability: float, payout_ratio: float) -> float`
 
-**Beschreibung:** Berechnet die optimale Positionsgröße basierend auf dem Kelly-Kriterium.
+**Beschreibung:** Berechnet den optimalen Kapitalanteil gemäß Kelly-Kriterium.
 
-**Parameter:**
-
-| Parameter | Typ | Beschreibung |
-|---|---|---|
-| `win_probability` | `float` | Die Wahrscheinlichkeit eines Gewinns. |
-| `payout_ratio` | `float` | Das Verhältnis von durchschnittlichem Gewinn zu durchschnittlichem Verlust. |
-
-**Rückgabe:**
-
-| Typ | Beschreibung |
-|---|---|
-| `float` | Der optimale Anteil des Kapitals, der riskiert werden sollte. |
-
-## 3. Modul: `data_fetcher`
+## 5. Modul: `07_data/fetcher.py`
 
 ### `fetch_ohlcv(symbol: str, start_date: str, end_date: str, source: str = 'YahooFinance') -> pd.DataFrame`
 
-**Beschreibung:** Ruft OHLCV-Daten (Open, High, Low, Close, Volume) für ein bestimmtes Symbol ab.
+**Beschreibung:** Liefert OHLCV-Daten als DataFrame mit Spalten `open`, `high`, `low`, `close`, `volume`.
 
-**Parameter:**
-
-| Parameter | Typ | Beschreibung |
-|---|---|---|
-| `symbol` | `str` | Das Tickersymbol des Finanzinstruments. |
-| `start_date` | `str` | Das Startdatum im Format 'YYYY-MM-DD'. |
-| `end_date` | `str` | Das Enddatum im Format 'YYYY-MM-DD'. |
-| `source` | `str` | Die Datenquelle (Standard: 'YahooFinance'). |
-
-**Rückgabe:**
-
-| Typ | Beschreibung |
-|---|---|
-| `pd.DataFrame` | Ein Pandas DataFrame mit den OHLCV-Daten. |
+**Unterstützte Quellen:** `YahooFinance`, `AlphaVantage`, `Quandl`, `Synthetic`.
