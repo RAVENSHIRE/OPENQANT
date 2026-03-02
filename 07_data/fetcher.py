@@ -196,3 +196,113 @@ def fetch_ohlcv(
         f"Source '{source}' is reserved and not yet implemented. "
         "Use 'YahooFinance' or 'Synthetic'."
     )
+
+
+# ===========================================================================
+# New DataFetcher class (2026 API)
+# ===========================================================================
+
+_OHLCV_REQUIRED = {"open", "high", "low", "close", "volume"}
+
+
+class DataFetcher:
+    """High-level data fetcher with config-dict API and optional disk cache.
+
+    Args:
+        cache_dir: Directory for optional persistent caching (unused for
+            synthetic data, reserved for future live sources).
+
+    Usage::
+
+        fetcher = DataFetcher(cache_dir="/tmp/cache")
+        df = fetcher.fetch({"ticker": "SPY", "source": "synthetic",
+                            "start": "2020-01-01", "end": "2023-12-31"})
+        universe = fetcher.fetch_universe(["SPY", "QQQ"], {...})
+    """
+
+    def __init__(self, cache_dir: str = "/tmp/openqant_cache") -> None:
+        self.cache_dir = cache_dir
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def fetch(self, config: dict) -> pd.DataFrame:
+        """Fetch and clean OHLCV data according to *config*.
+
+        Args:
+            config: Dict with keys:
+
+                * ``ticker``  \u2013 instrument symbol
+                * ``source``  \u2013 ``"synthetic"`` or ``"YahooFinance"`` (default ``"synthetic"``)
+                * ``start``   \u2013 start date ``YYYY-MM-DD``
+                * ``end``     \u2013 end date ``YYYY-MM-DD``
+
+        Returns:
+            Cleaned OHLCV DataFrame.
+
+        Raises:
+            ValueError: If required columns are missing after fetching.
+        """
+        source = str(config.get("source", "synthetic")).lower()
+        ticker = str(config["ticker"])
+        start = str(config["start"])
+        end = str(config["end"])
+
+        if source in ("synthetic", "Synthetic"):
+            raw = self._fetch_synthetic(ticker, start, end)
+        else:
+            raw = fetch_ohlcv(ticker, start, end, source=source)
+
+        return self._clean(raw)
+
+    def fetch_universe(self, tickers: list[str], config: dict) -> dict[str, pd.DataFrame]:
+        """Fetch data for multiple tickers using the same config template.
+
+        Args:
+            tickers: List of instrument symbols.
+            config: Base config dict (``ticker`` key is overridden per symbol).
+
+        Returns:
+            Dict mapping each ticker to its cleaned OHLCV DataFrame.
+        """
+        result: dict[str, pd.DataFrame] = {}
+        for t in tickers:
+            cfg = {**config, "ticker": t}
+            result[t] = self.fetch(cfg)
+        return result
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _fetch_synthetic(self, ticker: str, start: str, end: str) -> pd.DataFrame:
+        """Generate deterministic synthetic OHLCV through the module-level helper.
+
+        Args:
+            ticker: Instrument symbol (used as seed component).
+            start: Start date ``YYYY-MM-DD``.
+            end: End date ``YYYY-MM-DD``.
+
+        Returns:
+            Raw OHLCV DataFrame (not yet cleaned).
+        """
+        return _synthetic_ohlcv(ticker, start, end)
+
+    def _clean(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Validate schema and remove degenerate rows.
+
+        Args:
+            df: Raw OHLCV DataFrame.
+
+        Returns:
+            Cleaned DataFrame with positive volume and no missing columns.
+
+        Raises:
+            ValueError: If any required OHLCV column is absent.
+        """
+        missing = _OHLCV_REQUIRED - set(df.columns)
+        if missing:
+            raise ValueError(f"Missing column: {sorted(missing)}")
+        # Drop zero-volume rows (illiquid / bad ticks)
+        return df[df["volume"] > 0].copy()
