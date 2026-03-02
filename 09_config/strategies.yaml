@@ -1,0 +1,14 @@
+# Konfiguration der 4 March-Strategien
+strategies:
+  - name: "Saisonales Aktien-Momentum"
+    asset: "S&P500, Europa, Schweiz"
+    risk: "Niedrig-Mittel"
+  - name: "Trendfolge-Breakouts"
+    asset: "Aktien, ETFs"
+    risk: "Mittel"
+  - name: "Krypto-Momentum"
+    asset: "BTC, ETH, SOL"
+    risk: "Hoch"
+  - name: "Small-Cap-Reversal"
+    asset: "Russell 2000"
+    risk: "Sehr hoch"
