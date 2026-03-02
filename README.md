@@ -34,7 +34,7 @@ MarchStrategy/
 ├── 10_dashboard/app.py        ← Streamlit Dashboard
 ├── pytest.ini                 ← Test-Konfiguration
 ├── setup.cfg                  ← flake8, isort, mypy
-└── requirements.txt           ← Abhängigkeiten
+└── requirements.txt           ← Projekt-Abhängigkeiten
 ```
 
 ## Strategien
